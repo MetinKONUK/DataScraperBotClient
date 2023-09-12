@@ -32,13 +32,13 @@ const MainComponent = () => {
 
         setLoading(true)
         try {
+            // setData(MockData.data)
             const URL = `https://bulurum-scrape.onrender.com?category=${categoryName}&city=${cityName}&district=${districtName}`
             const response = await axios.get(URL)
             console.log(response.data.data)
             setData(response.data.data)
 
-            // setData(MockData.data)
-            // setLoading(false)
+            setLoading(false)
             toast.success('Data loaded successfully')
         } catch (error) {
             toast.error('Error in fetching data: ', error)
