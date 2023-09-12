@@ -1,4 +1,3 @@
-import { Box } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
 import { toast } from 'react-toastify'
 
@@ -70,20 +69,18 @@ const columns = [
 
 const DataGridComponent = ({ loading, data }) => {
     return (
-        <Box style={{ width: '90%' }}>
-            <DataGrid
-                loading={loading}
-                rows={data}
-                columns={columns}
-                rowsPerPage={6}
-                autoHeight
-                checkboxSelection
-                getRowHeight={() => 'auto'}
-                density="comfortable"
-                disableRowSelectionOnClick
-                onClipboardCopy={() => toast.success('Copied to clipboard')}
-            />
-        </Box>
+        <DataGrid
+            loading={loading}
+            rows={data}
+            columns={columns}
+            rowsPerPage={6}
+            autoHeight
+            checkboxSelection
+            getRowHeight={() => 'auto'}
+            density="comfortable"
+            disableRowSelectionOnClick
+            onClipboardCopy={() => toast.success('Copied to clipboard')}
+        />
     )
 }
 
