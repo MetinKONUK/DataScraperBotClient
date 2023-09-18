@@ -6,7 +6,6 @@ import {
     Grid,
     LinearProgress,
     Box,
-    Label,
     Typography,
     Button,
     Switch,
