@@ -57,7 +57,7 @@ const MainComponent = () => {
         if (!category || !city || !district)
             return toast.error('Please fill all the fields')
 
-        const socket = new WebSocket('ws://localhost:5000')
+        const socket = new WebSocket('wss://bulurum-scrape.onrender.com')
 
         socket.onopen = () => {
             console.log('Connected to server')
@@ -108,7 +108,7 @@ const MainComponent = () => {
             }
         }
         console.log(category, city, district, street)
-        const URL = `http://localhost:5000/?category=${category}&city=${city}&district=${district}`
+        const URL = `https://bulurum-scrape.onrender.com/?category=${category}&city=${city}&district=${district}`
         console.log(URL)
         setDatagridLoading(true)
         const response = await axios.get(URL)
