@@ -1,56 +1,138 @@
 import axios from 'axios'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 // import { MockData } from './MockData/MockData.js'
-import DataGridComponent from './Components/DataGrid.jsx'
-import { Box, Grid, TextField, Button } from '@mui/material'
+import DataGridComponent from './Components/DataGridArea.jsx'
+import {
+    Grid,
+    LinearProgress,
+    Box,
+    Label,
+    Typography,
+    Button,
+    Switch,
+} from '@mui/material'
 import { toast } from 'react-toastify'
 import * as XLSX from 'xlsx'
-import rightArrow from './static/icons/right-arrow.png'
+import InputArea from './Components/InputArea.jsx'
+import responseCodes from './responseCodes.js'
+
+const LinearProgressWithLabel = (props) => {
+    return (
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ width: '100%', mr: 1 }}>
+                <LinearProgress color="info" variant="determinate" {...props} />
+            </Box>
+            <Box sx={{ minWidth: 35 }}>
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                >{`${Math.round(props.value)}%`}</Typography>
+            </Box>
+        </Box>
+    )
+}
 
 const MainComponent = () => {
-    const [data, setData] = useState([])
-    const [loading, setLoading] = useState(false)
+    let [category, setCategory] = useState(null)
+    let [city, setCity] = useState(null)
+    let [district, setDistrict] = useState(null)
+    let [street, setStreet] = useState(null)
 
-    const [categoryName, setCategoryName] = useState(undefined)
-    const [cityName, setCityName] = useState(undefined)
-    const [districtName, setDistrictName] = useState(undefined)
+    let [totalResultsCount, setTotalResultsCount] = useState(-1)
+    let [progress, setProgress] = useState(0)
+    let [datagridLoading, setDatagridLoading] = useState(false)
 
-    const [downloading, setDownloading] = useState(false)
+    let [data, setData] = useState([])
+    let [augmentData, setAugmentData] = useState(false)
 
-    useEffect(() => {
-        // fetch data from database here
-    }, [])
+    let [downloading, setDownloading] = useState(false)
 
-    const handleSubmit = async (e) => {
-        if (loading === true) return
-        console.log(categoryName, cityName, districtName)
-        if (categoryName === undefined)
-            return toast.error('Category name is required')
-        if (cityName === undefined) return toast.error('City name is required')
-        if (districtName === undefined)
-            return toast.error('District name is required')
-
-        setLoading(true)
-        try {
-            // setData(MockData.data)
-            const URL = `https://bulurum-scrape.onrender.com?category=${categoryName}&city=${cityName}&district=${districtName}`
-            const response = await axios.get(URL)
-            console.log(response.data.data)
-            setData(response.data.data)
-
-            setLoading(false)
-            toast.success('Data loaded successfully')
-        } catch (error) {
-            toast.error('Error in fetching data: ', error)
-            setLoading(false)
-        }
+    const cleanUp = () => {
+        setTotalResultsCount(-1)
+        setProgress(0)
+        setDatagridLoading(false)
     }
 
-    const downloadExcel = (e) => {
-        e.preventDefault()
+    const handleScrapeRequest = async () => {
+        if (!category || !city || !district)
+            return toast.error('Please fill all the fields')
+
+        const socket = new WebSocket('ws://localhost:5000')
+
+        socket.onopen = () => {
+            console.log('Connected to server')
+        }
+
+        socket.onclose = () => {
+            console.log('Disconnected from server')
+        }
+
+        socket.onerror = (error) => {
+            console.log('Error: ', error)
+        }
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data)
+            console.log(data)
+            if (data.code === responseCodes['BROWSER_INITIATED'])
+                toast.success(data.payload.message)
+            else if (data.code === responseCodes['BROWSER_INITIATION_FAILED'])
+                toast.error(data.payload.message)
+            else if (data.code === responseCodes['BROWSER_CLOSED'])
+                toast.success(data.payload.message)
+            else if (data.code === responseCodes['BROWSER_CLOSING_FAILED'])
+                toast.error(data.payload.message)
+            else if (data.code === responseCodes['RECAPTCHA_FOUND'])
+                toast.info(data.payload.message)
+            else if (data.code === responseCodes['RECAPTCHA_SOLVED'])
+                toast.success(data.payload.message)
+            else if (data.code === responseCodes['RECAPTCHA_SOLVING_FAILED'])
+                toast.error(data.payload.message)
+            else if (data.code === responseCodes['TOTAL_RESULTS_COUNT']) {
+                setTotalResultsCount(data.payload.totalResultsCount)
+            } else if (
+                data.code === responseCodes['INDIVIDUAL_LINKS_PAGE_SCRAPED']
+            )
+                toast.success(data.payload.message)
+            else if (
+                data.code ===
+                responseCodes['INDIVIDUAL_LINKS_PAGE_SCRAPING_FAILED']
+            )
+                toast.error(data.payload.message)
+            else if (data.code === responseCodes['INDIVIDUAL_ENTITY_SCRAPED']) {
+                setProgress((oldProgress) => {
+                    if (oldProgress === totalResultsCount)
+                        return totalResultsCount
+                    return oldProgress + 1
+                })
+            }
+        }
+        console.log(category, city, district, street)
+        const URL = `http://localhost:5000/?category=${category}&city=${city}&district=${district}`
+        console.log(URL)
+        setDatagridLoading(true)
+        const response = await axios.get(URL)
+        console.log(response.data)
+
+        toast.success('Scraping finished successfully')
+        if (response.data.code === responseCodes['NO_RESULTS_FOUND']) {
+            toast.error(response.data.payload.message)
+        }
+        if (augmentData === true) {
+            let augmentedData = data.concat(response.data.payload.data)
+            setData(augmentedData)
+        } else {
+            setData(response.data.payload.data)
+        }
+
+        cleanUp()
+
+        socket.close()
+    }
+
+    const downloadExcel = async (e) => {
         if (downloading === true) return
         if (data.length === 0) return toast.error('No data to download')
-
         setDownloading(true)
         const ws = XLSX.utils.json_to_sheet(data)
         const wb = XLSX.utils.book_new()
@@ -64,84 +146,141 @@ const MainComponent = () => {
     return (
         <Grid
             container
-            justifyContent="center" // Center items horizontally
-            alignItems="center" // Center items vertically
-            style={{ height: '100vh' }}
+            direction="row"
+            alignItems="flex-start" // Align items vertically in the center
+            justifyContent="center"
+            sx={{ height: '100vh' }}
         >
             <Grid
                 item
                 xs={12}
-                style={{
-                    height: '25%',
+                sx={{
+                    backgroundColor: '#e0e0e0',
+                    height: '35vh',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: '#eeeeee',
                 }}
             >
-                <Box
-                    component="form"
-                    sx={{
-                        '& > :not(style)': { m: 1, width: '25ch' },
-                    }}
-                    noValidate
-                    autoComplete="off"
-                >
-                    <TextField
-                        label="Category Name"
-                        color="success"
-                        onChange={(e) => setCategoryName(e.target.value)}
-                    />
-                    <TextField
-                        label="City Name"
-                        color="success"
-                        onChange={(e) => setCityName(e.target.value)}
-                    />
-                    <TextField
-                        label="District Name"
-                        color="success"
-                        onChange={(e) => setDistrictName(e.target.value)}
-                    />
-                    <img
-                        onClick={(e) => handleSubmit(e)}
-                        src={rightArrow}
-                        alt="Continue"
-                        style={{
-                            marginTop: '1vh',
-                            width: '5vh',
-                            cursor: 'pointer',
-                        }}
-                    />
-                </Box>
+                <InputArea
+                    setCategory={setCategory}
+                    category={category}
+                    setCity={setCity}
+                    city={city}
+                    setDistrict={setDistrict}
+                    district={district}
+                    setStreet={setStreet}
+                    street={street}
+                    handleScrapeRequest={handleScrapeRequest}
+                    buttonDisabled={datagridLoading}
+                />
             </Grid>
+
             <Grid
                 item
                 xs={12}
-                style={{
-                    height: '75%',
+                sx={{
+                    backgroundColor: '#e0e0e0',
+                    height: '65vh',
                     display: 'flex',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
                     justifyContent: 'center',
-                    backgroundColor: '#eeeeee',
                 }}
             >
-                <Box style={{ width: '90%' }}>
-                    <DataGridComponent loading={loading} data={data} />
-                    <Box
+                <Grid
+                    container
+                    alignItems="flex-start"
+                    justifyContent="center"
+                    height={'85%'}
+                >
+                    <Grid
+                        item
                         mt={2}
-                        style={{ display: 'flex', justifyContent: 'flex-end' }}
+                        xs={10}
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
                     >
-                        <Button
-                            onClick={(e) => downloadExcel(e)}
-                            color="success"
-                            variant="outlined"
-                            size="large"
-                            loading={downloading}
-                        >
-                            Download
-                        </Button>
-                    </Box>
-                </Box>
+                        <Box sx={{ width: '100%' }}>
+                            {progress > 0 ? (
+                                <LinearProgressWithLabel
+                                    value={(progress / totalResultsCount) * 100}
+                                />
+                            ) : (
+                                <></>
+                            )}
+                        </Box>
+                    </Grid>
+                    <Grid
+                        item
+                        xs={10}
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
+                            '& .header-theme': {
+                                backgroundColor: '#9e9e9e',
+                                color: 'white',
+                                fontSize: '18px',
+                                fontWeight: 'bold',
+                                borderRight: '1px solid #424242',
+                            },
+                        }}
+                    >
+                        <DataGridComponent
+                            data={data}
+                            loading={datagridLoading}
+                        />
+                    </Grid>
+
+                    <Grid
+                        item
+                        mt={2}
+                        xs={10}
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <Switch
+                            sx={{
+                                marginLeft: 'auto',
+                            }}
+                            color="info"
+                            disabled={datagridLoading}
+                            checked={augmentData}
+                            onChange={(e) => {
+                                if (e.target.checked === true)
+                                    toast.info('Data will be augmented')
+                                else toast.info('Data will be replaced')
+                                setAugmentData(e.target.checked)
+                            }}
+                        />
+                        <Box sx={{ width: '100%' }}>
+                            <Button
+                                variant="contained"
+                                color="info"
+                                size="small"
+                                sx={{
+                                    fontSize: '12px',
+                                    fontWeight: 'bold',
+                                    color: 'white',
+                                    borderRadius: '0px',
+                                    marginLeft: 'auto',
+                                    display: 'flex',
+                                }}
+                                disabled={downloading}
+                                onClick={downloadExcel}
+                            >
+                                Download Excel
+                            </Button>
+                        </Box>
+                    </Grid>
+                </Grid>
             </Grid>
         </Grid>
     )
