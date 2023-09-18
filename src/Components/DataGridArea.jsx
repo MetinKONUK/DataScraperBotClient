@@ -8,6 +8,7 @@ const columns = [
         width: 200,
         headerAlign: 'center',
         align: 'center',
+        headerClassName: 'header-theme',
     },
     {
         field: 'companyName',
@@ -15,6 +16,7 @@ const columns = [
         width: 200,
         headerAlign: 'center',
         align: 'center',
+        headerClassName: 'header-theme',
     },
     {
         field: 'professions',
@@ -22,6 +24,7 @@ const columns = [
         width: 200,
         headerAlign: 'center',
         align: 'center',
+        headerClassName: 'header-theme',
     },
     {
         field: 'address',
@@ -29,6 +32,7 @@ const columns = [
         width: 200,
         headerAlign: 'center',
         align: 'center',
+        headerClassName: 'header-theme',
     },
     {
         field: 'primaryPhone',
@@ -36,6 +40,7 @@ const columns = [
         width: 200,
         headerAlign: 'center',
         align: 'center',
+        headerClassName: 'header-theme',
     },
     {
         field: 'secondaryPhone',
@@ -43,6 +48,7 @@ const columns = [
         width: 200,
         headerAlign: 'center',
         align: 'center',
+        headerClassName: 'header-theme',
     },
     {
         field: 'websiteLink',
@@ -50,6 +56,7 @@ const columns = [
         width: 200,
         headerAlign: 'center',
         align: 'center',
+        headerClassName: 'header-theme',
     },
     {
         field: 'email',
@@ -57,6 +64,7 @@ const columns = [
         width: 200,
         headerAlign: 'center',
         align: 'center',
+        headerClassName: 'header-theme',
     },
     {
         field: 'instagram',
@@ -64,22 +72,38 @@ const columns = [
         width: 200,
         headerAlign: 'center',
         align: 'center',
+        headerClassName: 'header-theme',
+    },
+    {
+        field: 'facebook',
+        headerName: 'Facebook',
+        width: 200,
+        headerAlign: 'center',
+        align: 'center',
+        headerClassName: 'header-theme',
+    },
+    {
+        field: 'mapLink',
+        headerName: 'Map Link',
+        width: 200,
+        headerAlign: 'center',
+        align: 'center',
+        headerClassName: 'header-theme',
     },
 ]
 
 const DataGridComponent = ({ loading, data }) => {
     return (
         <DataGrid
+            sx={{ border: 0.2, borderColor: '#9e9e9e', borderRadius: 2 }}
             loading={loading}
-            rows={data}
+            rows={data ?? []}
             columns={columns}
-            rowsPerPage={6}
-            autoHeight
-            checkboxSelection
             getRowHeight={() => 'auto'}
-            density="comfortable"
+            density="compact"
             disableRowSelectionOnClick
             onClipboardCopy={() => toast.success('Copied to clipboard')}
+            checkboxSelection={false}
         />
     )
 }
