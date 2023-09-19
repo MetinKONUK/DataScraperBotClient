@@ -107,6 +107,11 @@ const MainComponent = () => {
             }
         }
         console.log(category, city, district, street)
+        category = category ?? ''
+        city = city ?? ''
+        district = district ?? ''
+        street = street ?? ''
+
         const URL = `https://bulurum-scrape.onrender.com/?category=${category}&city=${city}&district=${district} ${street}`
         console.log(URL)
         setDatagridLoading(true)
