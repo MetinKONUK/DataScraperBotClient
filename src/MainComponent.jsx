@@ -107,7 +107,7 @@ const MainComponent = () => {
             }
         }
         console.log(category, city, district, street)
-        const URL = `https://bulurum-scrape.onrender.com/?category=${category}&city=${city}&district=${district}`
+        const URL = `https://bulurum-scrape.onrender.com/?category=${category}&city=${city}&district=${district} ${street}`
         console.log(URL)
         setDatagridLoading(true)
         const response = await axios.get(URL)
